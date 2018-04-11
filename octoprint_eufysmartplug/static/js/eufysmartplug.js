@@ -92,7 +92,7 @@ $(function() {
 						break;
 					default:
 						new PNotify({
-							title: 'TP-Link Smartplug Error',
+							title: 'Eufy Smartplug Error',
 							text: 'Status ' + plug.currentState() + ' for ' + plug.ip() + '. Double check IP Address\\Hostname in EufySmartplug Settings.',
 							type: 'error',
 							hide: true

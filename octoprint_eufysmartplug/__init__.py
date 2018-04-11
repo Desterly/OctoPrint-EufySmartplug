@@ -1,15 +1,21 @@
 # coding=utf-8
 from __future__ import absolute_import
 
+
 import octoprint.plugin
 from octoprint.server import user_permission
+from Crypto.Cipher import AES
+import octoprint_eufysmartplug.lakeside_proto
 import socket
 import json
 import logging
 import os
+import random
 import re
+import requests
 import threading
 import time
+import struct
 
 class eufysmartplugPlugin(octoprint.plugin.SettingsPlugin,
                             octoprint.plugin.AssetPlugin,
@@ -244,7 +250,7 @@ class eufysmartplugPlugin(octoprint.plugin.SettingsPlugin,
 		# for details.
 		return dict(
 			eufysmartplug=dict(
-				displayName="TP-Link Smartplug",
+				displayName="Eufy Smartplug",
 				displayVersion=self._plugin_version,
 
 				# version check: github repository
@@ -262,7 +268,7 @@ class eufysmartplugPlugin(octoprint.plugin.SettingsPlugin,
 # If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py
 # ("OctoPrint-PluginSkeleton"), you may define that here. Same goes for the other metadata derived from setup.py that
 # can be overwritten via __plugin_xyz__ control properties. See the documentation for that.
-__plugin_name__ = "TP-Link Smartplug"
+__plugin_name__ = "Eufy Smartplug"
 
 def __plugin_load__():
 	global __plugin_implementation__
