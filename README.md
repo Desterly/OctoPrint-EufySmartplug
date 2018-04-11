@@ -1,6 +1,6 @@
-# OctoPrint-TPLinkSmartplug
+# OctoPrint-EufySmartplug
 
-Work inspired by [OctoPrint-PSUControl](https://github.com/kantlivelong/OctoPrint-PSUControl) and [TP-Link WiFi SmartPlug Client](https://github.com/softScheck/tplink-smartplug), this plugin controls a TP-Link Smartplug via OctoPrint's nav bar. 
+Plugin based on [OctoPrint-TPLinkSmart](https://github.com/jneilliii/OctoPrint-TPLinkSmartplug) and [Google's Python Lakeside control for Eufy](https://github.com/google/python-lakeside), this plugin controls a Eufy Smartplug via OctoPrint's nav bar. 
 
 ##  Screenshots
 ![screenshot](screenshot.png)
@@ -14,7 +14,7 @@ Work inspired by [OctoPrint-PSUControl](https://github.com/kantlivelong/OctoPrin
 Install via the bundled [Plugin Manager](https://github.com/foosel/OctoPrint/wiki/Plugin:-Plugin-Manager)
 or manually using this URL:
 
-    https://github.com/jneilliii/OctoPrint-TPLinkSmartplug/archive/master.zip
+    https://github.com/Desterly/OctoPrint-EufySmartplug/archive/master.zip
 
 
 ## Configuration
