@@ -17,6 +17,11 @@ import threading
 import time
 import struct
 
+
+key = bytearray([0x24, 0x4E, 0x6D, 0x8A, 0x56, 0xAC, 0x87, 0x91, 0x24, 0x43, 0x2D, 0x8B, 0x6C, 0xBC, 0xA2, 0xC4])
+iv = bytearray([0x77, 0x24, 0x56, 0xF2, 0xA7, 0x66, 0x4C, 0xF3, 0x39, 0x2C, 0x35, 0x97, 0xE9, 0x3E, 0x57, 0x47])
+
+
 class eufysmartplugPlugin(octoprint.plugin.SettingsPlugin,
                             octoprint.plugin.AssetPlugin,
                             octoprint.plugin.TemplatePlugin,
@@ -37,7 +42,8 @@ class eufysmartplugPlugin(octoprint.plugin.SettingsPlugin,
 		eufysmartplug_logging_handler.setLevel(logging.DEBUG)
 
 		self._eufysmartplug_logger.addHandler(eufysmartplug_logging_handler)
-		self._eufysmartplug_logger.setLevel(logging.DEBUG if self._settings.get_boolean(["debug_logging"]) else logging.INFO)
+		#self._eufysmartplug_logger.setLevel(logging.DEBUG if self._settings.get_boolean(["debug_logging"]) else logging.INFO)
+                self._eufysmartplug_logger.setLevel(logging.DEBUG)
 		self._eufysmartplug_logger.propagate = False
 	
 	def on_after_startup(self):
@@ -48,7 +54,7 @@ class eufysmartplugPlugin(octoprint.plugin.SettingsPlugin,
 	def get_settings_defaults(self):
 		return dict(
 			debug_logging = False,
-			arrSmartplugs = [{'ip':'','label':'','icon':'icon-bolt','displayWarning':True,'warnPrinting':False,'gcodeEnabled':False,'gcodeOnDelay':0,'gcodeOffDelay':0,'autoConnect':True,'autoConnectDelay':10.0,'autoDisconnect':True,'autoDisconnectDelay':0,'sysCmdOn':False,'sysRunCmdOn':'','sysCmdOnDelay':0,'sysCmdOff':False,'sysRunCmdOff':'','sysCmdOffDelay':0,'currentState':'unknown','btnColor':'#808080'}],
+			arrSmartplugs = [{'ip':'','id':'','type':'','label':'','icon':'icon-bolt','displayWarning':True,'warnPrinting':False,'gcodeEnabled':False,'gcodeOnDelay':0,'gcodeOffDelay':0,'autoConnect':True,'autoConnectDelay':10.0,'autoDisconnect':True,'autoDisconnectDelay':0,'sysCmdOn':False,'sysRunCmdOn':'','sysCmdOnDelay':0,'sysCmdOff':False,'sysRunCmdOff':'','sysCmdOffDelay':0,'currentState':'unknown','btnColor':'#808080'}],
 			pollingInterval = 15,
 			pollingEnabled = False
 		)
@@ -96,8 +102,8 @@ class eufysmartplugPlugin(octoprint.plugin.SettingsPlugin,
 		self._eufysmartplug_logger.debug("Turning on %s." % plugip)
 		plug = self.plug_search(self._settings.get(["arrSmartplugs"]),"ip",plugip)
 		self._eufysmartplug_logger.debug(plug)		
-		chk = self.sendCommand("on",plugip)["system"]["set_relay_state"]["err_code"]
-		if chk == 0:
+		chk = self.sendCommand("on",plug)
+		if chk == 1:
 			self.check_status(plugip)
 			if plug["autoConnect"]:
 				t = threading.Timer(int(plug["autoConnectDelay"]),self._printer.connect)
@@ -116,15 +122,15 @@ class eufysmartplugPlugin(octoprint.plugin.SettingsPlugin,
 		if plug["autoDisconnect"]:
 			self._printer.disconnect()
 			time.sleep(int(plug["autoDisconnectDelay"]))
-		chk = self.sendCommand("off",plugip)["system"]["set_relay_state"]["err_code"]
+		chk = self.sendCommand("off",plug)
 		if chk == 0:
 			self.check_status(plugip)
 		
 	def check_status(self, plugip):
 		self._eufysmartplug_logger.debug("Checking status of %s." % plugip)
 		if plugip != "":
-			response = self.sendCommand("info",plugip)
-			chk = response["system"]["get_sysinfo"]["relay_state"]
+			plug = self.plug_search(self._settings.get(["arrSmartplugs"]),"ip",plugip)
+			chk = self.sendCommand("info",plug)
 			if chk == 1:
 				self._plugin_manager.send_plugin_message(self._identifier, dict(currentState="on",ip=plugip))
 			elif chk == 0:
@@ -173,49 +179,21 @@ class eufysmartplugPlugin(octoprint.plugin.SettingsPlugin,
 			result += chr(a)
 		return result
 	
-	def sendCommand(self, cmd, plugip):	
-		commands = {'info'     : '{"system":{"get_sysinfo":{}}}',
-			'on'       : '{"system":{"set_relay_state":{"state":1}}}',
-			'off'      : '{"system":{"set_relay_state":{"state":0}}}',
-			'cloudinfo': '{"cnCloud":{"get_info":{}}}',
-			'wlanscan' : '{"netif":{"get_scaninfo":{"refresh":0}}}',
-			'time'     : '{"time":{"get_time":{}}}',
-			'schedule' : '{"schedule":{"get_rules":{}}}',
-			'countdown': '{"count_down":{"get_rules":{}}}',
-			'antitheft': '{"anti_theft":{"get_rules":{}}}',
-			'reboot'   : '{"system":{"reboot":{"delay":1}}}',
-			'reset'    : '{"system":{"reset":{"delay":1}}}'
+	def sendCommand(self, cmd, plug):	
+		commands = {
+			'on'       : 1,
+			'off'      : 0,
 		}
 		
-		# try to connect via ip address
-		try:
-			socket.inet_aton(plugip)
-			ip = plugip
-			self._eufysmartplug_logger.debug("IP %s is valid." % plugip)
-		except socket.error:
-		# try to convert hostname to ip
-			self._eufysmartplug_logger.debug("Invalid ip %s trying hostname." % plugip)
-			try:
-				ip = socket.gethostbyname(plugip)
-				self._eufysmartplug_logger.debug("Hostname %s is valid." % plugip)
-			except (socket.herror, socket.gaierror):
-				self._eufysmartplug_logger.debug("Invalid hostname %s." % plugip)
-				return {"system":{"get_sysinfo":{"relay_state":3}}}
 				
 		try:
-			sock_tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			sock_tcp.connect((ip, 9999))
-			sock_tcp.send(self.encrypt(commands[cmd]))
-			data = sock_tcp.recv(2048)
-			sock_tcp.close()
-			
-			self._eufysmartplug_logger.debug("Sending command %s to %s" % (cmd,plugip))
-			self._eufysmartplug_logger.debug(self.decrypt(data))
-			return json.loads(self.decrypt(data[4:]))
+			plugdev = switch(plug["ip"],plug["id"],plug["type"])
+			plugdev.connect()
+      			if cmd != 'info':
+				plugdev.set_state(power = commands[cmd])
+                        return plugdev.get_status().switchinfo.packet.switchstatus.power
 		except socket.error:
-			self._eufysmartplug_logger.debug("Could not connect to %s." % plugip)
-			return {"system":{"get_sysinfo":{"relay_state":3}}}
-			
+			return -1	
 	##~~ Gcode processing hook
 	
 	def processGCODE(self, comm_instance, phase, cmd, cmd_type, gcode, *args, **kwargs):
@@ -265,6 +243,89 @@ class eufysmartplugPlugin(octoprint.plugin.SettingsPlugin,
 		)
 
 
+class device:
+    def __init__(self, address, code, kind=None):
+        self.address = address
+        self.code = code
+        self.kind = kind
+        
+    def connect(self):
+        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.s.connect((self.address, 55556))
+        self.update()
+        
+    def send_packet(self, packet, response):
+        cipher = AES.new(bytes(key), AES.MODE_CBC, bytes(iv))
+        raw_packet = packet.SerializeToString()
+    
+        for i in range(16 - (len(raw_packet) % 16)):
+            raw_packet += b'\0'
+        
+        encrypted_packet = cipher.encrypt(raw_packet)
+      
+        self.s.send(encrypted_packet)
+        if response:
+            data = self.s.recv(1024)
+     
+            cipher = AES.new(bytes(key), AES.MODE_CBC, bytes(iv))
+            decrypted_packet = cipher.decrypt(data)
+        
+            length = struct.unpack("<H", decrypted_packet[0:2])[0]
+            if self.kind == "T1011" or self.kind == "T1012":
+                packet.ParseFromString(decrypted_packet[2:length+2])
+            elif self.kind == "T1013":
+                packet = octoprint_eufysmartplug.lakeside_proto.T1013Packet()
+                packet.ParseFromString(decrypted_packet[2:length+2])
+            elif self.kind == "T1201" or self.kind == "T1202" or self.kind == "T1211":
+                packet = octoprint_eufysmartplug.lakeside_proto.T1201Packet()
+                packet.ParseFromString(decrypted_packet[2:length+2])
+            return packet
+        
+        return None
+        
+    def get_sequence(self):
+        packet = octoprint_eufysmartplug.lakeside_proto.T1012Packet()
+        packet.sequence = random.randrange(3000000)
+        packet.code = self.code
+        packet.ping.type = 0
+        response = self.send_packet(packet, True)
+        return response.sequence + 1
+    
+class switch(device):
+    def __init__(self, address, code, kind):
+        return device.__init__(self, address, code, kind)
+        
+    def connect(self):
+        return device.connect(self)
+        
+    def send_packet(self, packet, response):
+        return device.send_packet(self, packet, response)
+        
+    def get_sequence(self):
+        return device.get_sequence(self)
+        
+    def get_status(self):
+        packet = octoprint_eufysmartplug.lakeside_proto.T1201Packet()
+        packet.sequence = self.get_sequence()
+        packet.code = self.code
+        packet.switchinfo.type = 1
+        response = self.send_packet(packet, True)
+        return response
+        
+    def update(self):
+        response = self.get_status()
+        self.power = response.switchinfo.packet.switchstatus.power
+        
+    def set_state(self, power):
+        packet = octoprint_eufysmartplug.lakeside_proto.T1201Packet()
+        packet.switchinfo.type = 0
+        packet.switchinfo.packet.unknown1 = 100
+        packet.switchinfo.packet.switchset.command = 7
+        packet.switchinfo.packet.switchset.state = power
+        packet.sequence = self.get_sequence()
+        packet.code = self.code
+        self.send_packet(packet, False)            
+        
 # If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py
 # ("OctoPrint-PluginSkeleton"), you may define that here. Same goes for the other metadata derived from setup.py that
 # can be overwritten via __plugin_xyz__ control properties. See the documentation for that.
