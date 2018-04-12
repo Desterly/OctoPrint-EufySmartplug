@@ -42,8 +42,7 @@ class eufysmartplugPlugin(octoprint.plugin.SettingsPlugin,
 		eufysmartplug_logging_handler.setLevel(logging.DEBUG)
 
 		self._eufysmartplug_logger.addHandler(eufysmartplug_logging_handler)
-		#self._eufysmartplug_logger.setLevel(logging.DEBUG if self._settings.get_boolean(["debug_logging"]) else logging.INFO)
-                self._eufysmartplug_logger.setLevel(logging.DEBUG)
+		self._eufysmartplug_logger.setLevel(logging.DEBUG if self._settings.get_boolean(["debug_logging"]) else logging.INFO)
 		self._eufysmartplug_logger.propagate = False
 	
 	def on_after_startup(self):
@@ -160,24 +159,6 @@ class eufysmartplugPlugin(octoprint.plugin.SettingsPlugin,
 		for item in list: 
 			if item[key] == value: 
 				return item
-	
-	def encrypt(self, string):
-		key = 171
-		result = "\0\0\0"+chr(len(string))
-		for i in string: 
-			a = key ^ ord(i)
-			key = a
-			result += chr(a)
-		return result
-
-	def decrypt(self, string):
-		key = 171 
-		result = ""
-		for i in string: 
-			a = key ^ ord(i)
-			key = ord(i) 
-			result += chr(a)
-		return result
 	
 	def sendCommand(self, cmd, plug):	
 		commands = {
