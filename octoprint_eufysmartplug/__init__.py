@@ -181,21 +181,27 @@ class eufysmartplugPlugin(octoprint.plugin.SettingsPlugin,
 		if gcode:
 			if cmd.startswith("M80"):			
 				plugip = re.sub(r'^M80\s?', '', cmd)
-				self._eufysmartplug_logger.debug("Received M80 command, attempting power on of %s." % plugip)
+				self._eufysmartplug_logger.debug("Received M80 command, attempting power on")
 				plug = self.plug_search(self._settings.get(["arrSmartplugs"]),"ip",plugip)
-				self._eufysmartplug_logger.debug(plug)
-				if plug["gcodeEnabled"]:
-					t = threading.Timer(int(plug["gcodeOnDelay"]),self.turn_on,args=[plugip])
-					t.start()
+                                if plug is None:
+					plug = self.plug_search(self._settings.get(["arrSmartplugs"]),"gcodeEnabled",True)
+                                if plug is not None:
+					self._eufysmartplug_logger.debug(plug)
+					if plug["gcodeEnabled"]:
+						t = threading.Timer(int(plug["gcodeOnDelay"]),self.turn_on,args=[plug["ip"]])
+						t.start()
 				return
 			elif cmd.startswith("M81"):
 				plugip = re.sub(r'^M81\s?', '', cmd)
-				self._eufysmartplug_logger.debug("Received M81 command, attempting power off of %s." % plugip)
+				self._eufysmartplug_logger.debug("Received M81 command, attempting power off")
 				plug = self.plug_search(self._settings.get(["arrSmartplugs"]),"ip",plugip)
-				self._eufysmartplug_logger.debug(plug)
-				if plug["gcodeEnabled"]:
-					t = threading.Timer(int(plug["gcodeOffDelay"]),self.turn_off,args=[plugip])
-					t.start()
+                                if plug is None:
+					plug = self.plug_search(self._settings.get(["arrSmartplugs"]),"gcodeEnabled",True)
+				if plug is not None:
+					self._eufysmartplug_logger.debug(plug)
+					if plug["gcodeEnabled"]:
+						t = threading.Timer(int(plug["gcodeOffDelay"]),self.turn_off,args=[plug["ip"]])
+						t.start()
 				return
 			else:
 				return
