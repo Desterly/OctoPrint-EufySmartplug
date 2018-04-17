@@ -12,6 +12,7 @@ $(function() {
 		self.loginState = parameters[1];
 
 		self.arrSmartplugs = ko.observableArray();
+		self.eufyHome = ko.observable();
 		self.isPrinting = ko.observable(false);
 		self.selectedPlug = ko.observable();
 		self.processing = ko.observableArray([]);
@@ -38,6 +39,59 @@ $(function() {
 
 		self.cancelClick = function(data) {
 			self.processing.remove(data.ip());
+		}
+
+		self.downloadPlug = function(data) {
+			self.eufyHome({'username':ko.observable(''),
+					'password':ko.observable('')
+			});
+			$("#EufyHomeEditor").modal("show");
+		}
+
+		self.downloadEufy = function(data) {
+
+			$.ajax({
+				url: API_BASEURL + "plugin/eufysmartplug",
+				type: "POST",
+				dataType: "json",
+				data: JSON.stringify({
+					command: "eufyDownload",
+					username: data.username(),
+					password: data.password()
+				}),
+				contentType: "application/json; charset=UTF-8",
+				success: function(data) {
+					self.settings.settings.plugins.eufysmartplug.arrSmartplugs.removeAll();
+					//var array = [];
+					$.each(data, function (index, value) {
+						self.selectedPlug({'ip':ko.observable(value['ip']),
+                                    'id':ko.observable(value['id']),
+                                    'type':ko.observable(value['type']),
+									'label':ko.observable(value['label']),
+									'icon':ko.observable(value['icon']),
+									'displayWarning':ko.observable(value['displayWarning']),
+									'warnPrinting':ko.observable(value['warnPrinting']),
+									'gcodeEnabled':ko.observable(value['gcodeEnabled']),
+									'gcodeOnDelay':ko.observable(value['gcodeOnDelay']),
+									'gcodeOffDelay':ko.observable(value['gcodeOffDelay']),
+									'autoConnect':ko.observable(value['autoConnect']),
+									'autoConnectDelay':ko.observable(value['autoConnectDelay']),
+									'autoDisconnect':ko.observable(value['autoDisconnect']),
+									'autoDisconnectDelay':ko.observable(value['autoDisconnectDelay']),
+									'sysCmdOn':ko.observable(value['sysCmdOn']),
+									'sysRunCmdOn':ko.observable(value['sysRunCmdOn']),
+									'sysCmdOnDelay':ko.observable(value['sysCmdOnDelay']),
+									'sysCmdOff':ko.observable(value['sysCmdOff']),
+									'sysRunCmdOff':ko.observable(value['sysRunCmdOff']),
+									'sysCmdOffDelay':ko.observable(value['sysCmdOffDelay']),
+									'currentState':ko.observable(value['currentState']),
+									'btnColor':ko.observable('#808080')});
+						self.settings.settings.plugins.eufysmartplug.arrSmartplugs.push(self.selectedPlug());
+					});
+					$("#EufyHomeEditor").modal("hide");
+				}
+			});
+
 		}
 
 		self.editPlug = function(data) {

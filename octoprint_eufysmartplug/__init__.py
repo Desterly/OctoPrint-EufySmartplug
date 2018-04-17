@@ -17,7 +17,6 @@ import threading
 import time
 import struct
 
-
 key = bytearray([0x24, 0x4E, 0x6D, 0x8A, 0x56, 0xAC, 0x87, 0x91, 0x24, 0x43, 0x2D, 0x8B, 0x6C, 0xBC, 0xA2, 0xC4])
 iv = bytearray([0x77, 0x24, 0x56, 0xF2, 0xA7, 0x66, 0x4C, 0xF3, 0x39, 0x2C, 0x35, 0x97, 0xE9, 0x3E, 0x57, 0x47])
 
@@ -135,11 +134,10 @@ class eufysmartplugPlugin(octoprint.plugin.SettingsPlugin,
 			elif chk == 0:
 				self._plugin_manager.send_plugin_message(self._identifier, dict(currentState="off",ip=plugip))
 			else:
-				self._eufysmartplug_logger.debug(response)
 				self._plugin_manager.send_plugin_message(self._identifier, dict(currentState="unknown",ip=plugip))		
 	
 	def get_api_commands(self):
-		return dict(turnOn=["ip"],turnOff=["ip"],checkStatus=["ip"])
+		return dict(turnOn=["ip"],turnOff=["ip"],checkStatus=["ip"],eufyDownload=["username","password"])
 
 	def on_api_command(self, command, data):
 		if not user_permission.can():
@@ -152,8 +150,41 @@ class eufysmartplugPlugin(octoprint.plugin.SettingsPlugin,
 			self.turn_off("{ip}".format(**data))
 		elif command == 'checkStatus':
 			self.check_status("{ip}".format(**data))
+		elif command == 'eufyDownload':
+			return self.eufy_download(data["username"], data["password"])
 			
 	##~~ Utilities
+
+	def eufy_download(self, username, password):
+	    devices = [];
+
+	    client_id = "eufyhome-app"
+	    client_secret = "GQCpr9dSp3uQpsOMgJ4xQ"
+
+	    payload = {'client_id':client_id, 'client_Secret':client_secret, 'email':username, 'password':password}
+	    r = requests.post("https://home-api.eufylife.com/v1/user/email/login", json=payload)
+
+	    token = r.json()['access_token']
+	    headers = {'token': token, 'category': 'Home'}
+	    r = requests.get("https://home-api.eufylife.com/v1/device/list/devices-and-groups", headers=headers)
+	    info = r.json()
+            plugs = self._settings.get(["arrSmartplugs"])
+
+	    for item in info['items']:
+	        plug = self.plug_search(plugs, "label",item['device']['alias_name'])
+                if plug is None:
+                    plug = self.plug_search(plugs,"ip",item['device']['wifi']['lan_ip_addr'])
+                if plug is not None:
+                    index = plugs.index(plug)
+                    plug["ip"] = item['device']['wifi']['lan_ip_addr']
+                    plug["id"] = item['device']['local_code']
+                    plug["type"] = item['device']['product']['product_code']
+                    plug["label"] =  item['device']['alias_name']
+                    plugs[index] = plug
+                else:
+		    plug = {'ip': item['device']['wifi']['lan_ip_addr'],'id':item['device']['local_code'],'type':item['device']['product']['product_code'],'label':item['device']['alias_name'],'icon':'icon-bolt','displayWarning':True,'warnPrinting':False,'gcodeEnabled':False,'gcodeOnDelay':0,'gcodeOffDelay':0,'autoConnect':True,'autoConnectDelay':10.0,'autoDisconnect':True,'autoDisconnectDelay':0,'sysCmdOn':False,'sysRunCmdOn':'','sysCmdOnDelay':0,'sysCmdOff':False,'sysRunCmdOff':'','sysCmdOffDelay':0,'currentState':'unknown','btnColor':'#808080'}
+                    plugs.append(plug)
+	    return json.dumps(plugs)
 	
 	def plug_search(self, list, key, value): 
 		for item in list: 

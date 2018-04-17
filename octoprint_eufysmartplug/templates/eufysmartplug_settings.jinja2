@@ -3,13 +3,15 @@
 	<thead>
 		<tr>
 			<td>{{ _('Plug') }}</td>
+			<td>{{ _('IP') }}</td>
 			<td style="text-align:center">{{ _('Options') }}</td>
-			<td style="text-align:center"><a href="#" class="btn btn-mini icon-plus" data-bind="click: addPlug"></a></td>
+			<td style="text-align:center"><a href="#" class="btn btn-mini icon-plus" data-bind="click: addPlug" title="Add new Plug"></a>&nbsp;<a href="#" class="btn btn-mini icon-download" data-bind="click: $root.downloadPlug" title="Download Plugs from EufyHome"></a></td>
 		</tr>
 	</thead>
 	<tbody data-bind="foreach: settings.settings.plugins.eufysmartplug.arrSmartplugs">
 		<tr data-bind="attr: {title: ip}">
 			<td><span data-bind="text: label" /></td>
+			<td><span data-bind="text: ip" /></td>
 			<td style="text-align:center">
 				<i class="icon" data-bind="css: {'icon-check': displayWarning(),'icon-check-empty': !displayWarning()}" title="Warning Prompt" />
 				<i class="icon" data-bind="css: {'icon-check': warnPrinting(),'icon-check-empty': !warnPrinting()}" title="Warn While Printing" />
@@ -47,6 +49,29 @@
 		<label class="control-label">{{ _('Minutes between checks') }}</label>
 		<input type="number" min="0" data-bind="value: settings.settings.plugins.eufysmartplug.pollingInterval" />
 	</div>
+</div>
+
+<div id="EufyHomeEditor" class="modal hide fade" data-bind="with: eufyHome">
+	<div class="modal-header">
+		<a href="#" class="close" data-dismiss="modal" aria-hidden="true">&times;</a>
+		<h3>Download from EufyHome</h3>
+	</div>
+	<div class="modal-body">
+		<div class="control-group">
+			<div class="controls">
+				<label class="control-label">{{ _('Username/Email') }}</label><input type="text" class="input-block-level" data-bind="value: username" />
+			</div>
+		</div>
+                <div class="control-group">
+                        <div class="controls">
+                                <label class="control-label">{{ _('Password') }}</label><input type="password" class="input-block-level" data-bind="value: password" />
+                        </div>
+                </div>
+		<a href="#" class="btn btn-normal" data-bind="click: $root.downloadEufy">Download</a>
+        </div>
+        <div class="modal-footer">
+                <a href="#" class="btn" data-dismiss="modal" aria-hidden="true">{{ _('Close') }}</a>
+        </div>
 </div>
 
 <div id="EufyPlugEditor" data-bind="with: selectedPlug" class="modal hide fade">
